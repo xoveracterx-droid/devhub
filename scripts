@@ -1,6 +1,6 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
-local Window = Rayfield:CreateWindow({
+
+local Window = DevHub3:CreateWindow({
     Name = "Dev Hub",
     Icon = 0,
     LoadingTitle = "Garden Pet Hub",
@@ -8,7 +8,7 @@ local Window = Rayfield:CreateWindow({
     ShowText = "dev",
     Theme = "Default",
     ToggleUIKeybind = "K",
-    DisableRayfieldPrompts = false,
+    DisableDevHub3Prompts = false,
     DisableBuildWarnings = false,
     ConfigurationSaving = {
         Enabled = true,
@@ -24,7 +24,7 @@ local player = game.Players.LocalPlayer
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
-Rayfield:Notify({
+DevHub3:Notify({
     Title = "Success",
     Content = "Welcome, " .. player.Name,
     Duration = 5,
