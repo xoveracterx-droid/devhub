@@ -1,0 +1,213 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+
+local Window = Rayfield:CreateWindow({
+   Name = "Dev Hub",
+   Icon = 0,
+   LoadingTitle = "Garden Pet Hub",
+   LoadingSubtitle = "by dev",
+   ShowText = "dev",
+   Theme = "Default",
+   ToggleUIKeybind = "K",
+   DisableRayfieldPrompts = false,
+   DisableBuildWarnings = false,
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = nil,
+      FileName = "Dev Hub"
+  
+   }
+})
+
+local MainTab = Window:CreateTab("Home", nil)
+local MainSection = MainTab:CreateSection("Main")
+
+local player = game.Players.LocalPlayer
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+
+Rayfield:Notify({
+    Title = "Success",
+    Content = "Welcome, " .. player.Name,
+    Duration = 5,
+    Image = nil,
+})
+
+
+MainTab:CreateSlider({
+   Name = "Walk Speed",
+   Range = {0, 100},
+   Increment = 5,
+   Suffix = "Speed",
+   CurrentValue = 16,
+   Flag = "WalkSpeed",
+   Callback = function(val)
+      local character = player.Character or player.CharacterAdded:Wait()
+      local humanoid = character:FindFirstChildOfClass("Humanoid")
+      if humanoid then humanoid.WalkSpeed = val end
+   end,
+})
+
+
+local infiniteJump = false
+MainTab:CreateToggle({
+    Name = "Infinite Jump",
+    CurrentValue = false,
+    Flag = "InfiniteJump",
+    Callback = function(state)
+        infiniteJump = state
+    end,
+})
+UIS.JumpRequest:Connect(function()
+    if infiniteJump then
+        local char = player.Character or player.CharacterAdded:Wait()
+        local humanoid = char:FindFirstChildWhichIsA("Humanoid")
+        if humanoid then
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
+end)
+
+
+local noclip = false
+MainTab:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Flag = "NoclipToggle",
+    Callback = function(state)
+        noclip = state
+    end,
+})
+
+RunService.Stepped:Connect(function()
+    if noclip and player.Character then
+        for _, part in pairs(player.Character:GetDescendants()) do
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+
+local flying = false
+local flySpeed = 3 
+local bodyGyro, bodyVelocity, bodyVelocityConnection
+
+
+MainTab:CreateSlider({
+    Name = "Fly Speed",
+    Range = {1, 100},
+    Increment = 1,
+    Suffix = "Speed",
+    CurrentValue = flySpeed,
+    Flag = "FlySpeedSlider",
+    Callback = function(value)
+        flySpeed = value
+    end,
+})
+
+
+MainTab:CreateToggle({
+    Name = "Fly",
+    CurrentValue = false,
+    Flag = "FlyToggle",
+    Callback = function(state)
+        flying = state
+        local character = player.Character or player.CharacterAdded:Wait()
+        local root = character:WaitForChild("HumanoidRootPart")
+
+        if flying then
+            bodyGyro = Instance.new("BodyGyro", root)
+            bodyGyro.P = 9e4
+            bodyGyro.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+            bodyGyro.cframe = root.CFrame
+
+            bodyVelocity = Instance.new("BodyVelocity", root)
+            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+            bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+
+            bodyVelocityConnection = RunService.RenderStepped:Connect(function()
+                if flying then
+                    local move = Vector3.zero
+                    if UIS:IsKeyDown(Enum.KeyCode.W) then move = move + workspace.CurrentCamera.CFrame.LookVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.S) then move = move - workspace.CurrentCamera.CFrame.LookVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.A) then move = move - workspace.CurrentCamera.CFrame.RightVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.D) then move = move + workspace.CurrentCamera.CFrame.RightVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.Space) then move = move + Vector3.new(0, 1, 0) end
+                    if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then move = move - Vector3.new(0, 1, 0) end
+
+                    if move.Magnitude > 0 then
+                        bodyVelocity.Velocity = move.Unit * flySpeed * 30
+                    else
+                        bodyVelocity.Velocity = Vector3.new(0,0,0)
+                    end
+                    bodyGyro.CFrame = workspace.CurrentCamera.CFrame
+                end
+            end)
+        else
+            if bodyGyro then bodyGyro:Destroy() end
+            if bodyVelocity then bodyVelocity:Destroy() end
+            if bodyVelocityConnection then bodyVelocityConnection:Disconnect() end
+        end
+    end,
+})
+
+
+local espEnabled = false
+local espBoxes = {}
+
+local function createESPForPlayer(plr)
+    if plr == player then return end
+    local char = plr.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        local box = Instance.new("BoxHandleAdornment")
+        box.Name = "ESPBox"
+        box.Adornee = char.HumanoidRootPart
+        box.AlwaysOnTop = true
+        box.ZIndex = 5
+        box.Size = Vector3.new(4, 6, 2)
+        box.Color3 = Color3.fromRGB(255, 0, 0)
+        box.Transparency = 0.5
+        box.Parent = char
+        espBoxes[plr] = box
+    end
+end
+
+local function removeESPForPlayer(plr)
+    if espBoxes[plr] then
+        espBoxes[plr]:Destroy()
+        espBoxes[plr] = nil
+    end
+end
+
+MainTab:CreateToggle({
+    Name = "Player ESP",
+    CurrentValue = false,
+    Flag = "ESP",
+    Callback = function(state)
+        espEnabled = state
+        if espEnabled then
+            for _, plr in pairs(game.Players:GetPlayers()) do
+                createESPForPlayer(plr)
+            end
+            
+            game.Players.PlayerAdded:Connect(function(plr)
+                if espEnabled then
+                    plr.CharacterAdded:Connect(function()
+                        createESPForPlayer(plr)
+                    end)
+                end
+            end)
+            
+            game.Players.PlayerRemoving:Connect(function(plr)
+                removeESPForPlayer(plr)
+            end)
+        else
+            for _, plr in pairs(game.Players:GetPlayers()) do
+                removeESPForPlayer(plr)
+            end
+        end
+    end,
+})
